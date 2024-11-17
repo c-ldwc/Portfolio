@@ -25,12 +25,10 @@ def hmc(
     else:
         n_param = 1
 
-    samples = np.zeros((n_iter, n_param))  # last column is momentum var
+    samples = np.zeros((n_iter, n_param))  
 
     samples[0, :] = starting
 
-    # def g(center, width=.05):
-    #     return uniform(center-width/2, width)
 
     def g(x, covar):
         return multivariate_normal(x, covar)
@@ -65,7 +63,7 @@ def hmc(
             # print(f"l: {l}, proposal: {proposal}, mmntm_prop:{mmntm_prop}, grad:{grad(**grad_params)}")
 
             mmntm_prop += 1 / 2 * eps * grad(**grad_params)
-            proposal += eps * M_inv @ mmntm_prop
+            proposal += eps * np.dot(M_inv, mmntm_prop)
             grad_params["proposal"] = proposal
             mmntm_prop += 1 / 2 * eps * grad(**grad_params)
             if any(np.isnan(proposal)) or any(np.isnan(mmntm_prop)):

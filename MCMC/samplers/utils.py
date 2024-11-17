@@ -1,6 +1,7 @@
 import numpy as np
-import plotly.graph_objects as go
-from plotly.subplots import make_subplots
+# import plotly.graph_objects as go
+# from plotly.subplots import make_subplots
+import matplotlib.pyplot as plt
 
 
 def R_hat(chains, warmup=2000):
@@ -32,54 +33,43 @@ def R_hat(chains, warmup=2000):
     return np.sqrt(var_estimand / W)
 
 
-def plot_chains(chains, warmup):
+def plot_chains(chains, warmup, names):
     """
     chains is a n_chains X n_iterations X n_params array
     """
 
     chains = chains[:, warmup:, :]
-    fig = make_subplots(chains.shape[2], 1)
+    fig,ax = plt.subplots(chains.shape[2], 1)
     for p in range(chains.shape[2]):
         for chain in range(chains.shape[0]):
-            fig.add_trace(
-                go.Scatter(
-                    x=[i for i in range(chains.shape[1])],
-                    y=chains[chain, :, p],
-                    mode="lines",
-                    name=f"chain {chain}",
-                    opacity=0.6,
-                    showlegend = False
-                ),
-                p + 1,
-                1,
-            )
-    return fig
+            ax[p].plot(
+                    [i for i in range(chains.shape[1])],
+                    chains[chain, :, p],
+                    alpha=0.6,
+                    c = 'blue'
+                )
+            
+            ax[p].set_ylabel(names[p])
+    fig.tight_layout()
+
+    return None
 
 
-def param_scatter(params, names, warmup=1000):
+def param_scatter(params, names, warmup=1000, plot_params = {'c':'k', 's':4}):
     data = params[warmup:, :]
 
-    fig = make_subplots(
+    fig, ax = plt.subplots(
         params.shape[1], params.shape[1]
-    )  # , vertical_spacing = .1, horizontal_spacing = .1)
+    )  
     for i in range(params.shape[1]):
         for j in range(params.shape[1]):
             if j >= i:
-                fig.add_trace(
-                    go.Scatter(
-                        x=data[:, j],
-                        y=data[:, i],
-                        mode="markers",
-                        marker=dict(
-                            color="White", size=5, line=dict(color="Black", width=1)
-                        ),
-                        showlegend=False,
-                    ),
-                    i + 1,
-                    j + 1,
-                )
+                
+                plot_params['x'] = data[:, j]
+                plot_params['y'] = data[:, i]
+                ax[i, j].scatter(**plot_params)
             if j == i:
-                fig.update_yaxes(title_text=names[i], row=i + 1, col=j + 1)
-                fig.update_xaxes(title_text=names[i], row=i + 1, col=j + 1)
+                ax[i,i].set_xlabel(names[i])
+                ax[i,i].set_ylabel(names[i])
 
-    return fig
+    fig.tight_layout()
