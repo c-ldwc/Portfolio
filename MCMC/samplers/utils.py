@@ -33,10 +33,11 @@ def R_hat(chains, warmup=2000):
     return np.sqrt(var_estimand / W)
 
 
-def plot_chains(chains, warmup, names):
+def plot_chains(chains, warmup, names, alpha = .6, color = 'blue'):
     """
     chains is a n_chains X n_iterations X n_params array
     """
+
 
     chains = chains[:, warmup:, :]
     fig,ax = plt.subplots(chains.shape[2], 1)
@@ -45,8 +46,8 @@ def plot_chains(chains, warmup, names):
             ax[p].plot(
                     [i for i in range(chains.shape[1])],
                     chains[chain, :, p],
-                    alpha=0.6,
-                    c = 'blue'
+                    alpha=alpha,
+                    c = color
                 )
             
             ax[p].set_ylabel(names[p])
