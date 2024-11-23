@@ -1,13 +1,10 @@
-from scipy.stats import beta, binom
+from scipy.stats import beta
 import numpy as np
 
 from copy import deepcopy
 
 from typing import Callable
 from dataclasses import dataclass, field
-from tqdm import tqdm
-# from .reward import reward_generator
-# from .stats import bound
 
 
 @dataclass
@@ -26,7 +23,7 @@ class bandit:
 
 @dataclass
 class thompsonSampling(bandit):
-    prior: list[int] = field(default_factory=[1, 1])  # shared prior for actions
+    prior: list[int] = field(default=list)  # shared prior for actions
     initial: bool = True  # Is this the first trial?
 
     def __post_init__(self):
@@ -48,9 +45,11 @@ class thompsonSampling(bandit):
         """
         Update bandit priors
         """
+        self.rewards = np.ones(self.N)
         for unit in range(self.N):
             this_prior = self.act_priors[self.action[unit]]
             this_reward = self.reward_fn(self.action[unit])
+            self.rewards[unit] = this_reward
             self.act_priors[
                 self.action[unit]
             ] = [  # conjugate prior update for beta prior with binomial data

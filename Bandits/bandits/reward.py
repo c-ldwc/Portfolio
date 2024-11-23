@@ -1,18 +1,21 @@
-from scipy.stats import beta
+from scipy.stats import beta, binom
 from numpy import sin, pi, ndarray
 from dataclasses import dataclass
 
+
 @dataclass
-class reward_generator:
+class beta_reward_generator:
     """
     Beta distributed reward generator
     mus: list of means, len(mus) is the number of arms
     a: alpha params for reward distributions. same length as number of arms
     b parameters are calculated such that we get means equal to mu
     """
+
     mus: ndarray[float] = None
     a: ndarray[float] = None
     N: int = 1
+
     def __post_init__(self):
         self.b = self.a / self.mus - self.a
 
@@ -24,6 +27,28 @@ class reward_generator:
             return beta(self.a[act], self.b[act]).rvs(self.N)[0]
         else:
             return beta(self.a[act], self.b[act]).rvs(self.N)
+
+
+@dataclass
+class binom_reward_generator:
+    """
+    Beta distributed reward generator
+    mus: list of means, len(mus) is the number of arms
+    a: alpha params for reward distributions. same length as number of arms
+    b parameters are calculated such that we get means equal to mu
+    """
+
+    mus: ndarray[float] = None
+    N: int = 1
+
+    def reward(self, act):
+        """
+        Get a reward for action `act` with mean self.mus[act]
+        """
+        if self.N == 1:
+            return binom(p=self.mus[act], n=1).rvs(self.N)[0]
+        else:
+            return binom(p=self.mus[act], n=1).rvs(self.N)
 
 
 # def non_stationary_reward(mu, t, N=1, amp=0.01, delay=0):
