@@ -16,9 +16,11 @@ class bandit:
     t: int = 0
 
     def __post_init__(self):
-        self.running_means = [0] * self.K  # means for each action
-        self.running_counts = [0] * self.K  # Counts for each action
-        self.action = [0] * self.N  # most recent actions
+        self.running_means =  np.zeros(self.K) # means for each action
+        self.running_counts =  np.zeros(self.K)  # Counts for each action
+        self.action = np.ones(self.N, dtype = int)  # most recent actions
+        self.rewards = np.zeros((self.K, 2), dtype = int)
+        self.last_rewards = np.ones(self.N, dtype = int) * -99
 
 
 @dataclass
@@ -27,9 +29,9 @@ class thompsonSampling(bandit):
     initial: bool = True  # Is this the first trial?
 
     def __post_init__(self):
-        self.act_priors = [
+        self.act_priors = np.array([
             deepcopy(self.prior) for a in range(self.K)
-        ]  # prior for each action
+        ]).astype(int)  # prior for each action
         super().__post_init__()
 
     def choose_action(self):
@@ -41,21 +43,29 @@ class thompsonSampling(bandit):
             self.action[unit] = np.argmax(sampled_rewards)
         self.t += 1
 
+    def observe_reward(self):
+        assert np.all(self.rewards.shape == self.act_priors.shape), f"prior dims({self.act_priors.shape}) and reward dims ({self.rewards.shape}) differ"
+        for unit in range(self.N):
+            this_reward = int(self.reward_fn(self.action[unit], self.t))
+            self.rewards[self.action[unit], 1-this_reward ] += 1
+            self.last_rewards[unit] = this_reward
+
+
     def update(self):
         """
-        Update bandit priors
+        Update bandit priors, 
+        This is the ordinary binomial likelihood beta prior on p update
         """
-        self.rewards = np.ones(self.N)
-        for unit in range(self.N):
-            this_prior = self.act_priors[self.action[unit]]
-            this_reward = self.reward_fn(self.action[unit])
-            self.rewards[unit] = this_reward
-            self.act_priors[
-                self.action[unit]
-            ] = [  # conjugate prior update for beta prior with binomial data
-                this_prior[0] + this_reward,
-                this_prior[1] + 1 - this_reward,
-            ]
+        Ns = self.rewards.sum(axis = 1)
+        # print(f't = {self.t}, act = {self.action}, last rwd = {self.last_rewards}')
+        # print(self.act_priors)
+
+        # print(self.rewards)
+        self.act_priors[:, 0] +=  self.rewards[:, 0]
+        self.act_priors[:, 1] +=  Ns - self.rewards[:, 1]
+        #reset rewards until next update
+        self.rewards = np.zeros((self.K, 2), dtype = int)
+        self.t+=1
 
 
 @dataclass
@@ -70,7 +80,7 @@ class UCB(bandit):
 
         for arm in range(self.K):
             # print(arm)
-            rwd = self.reward_fn(arm)
+            rwd = self.reward_fn(arm,self.t)
 
             self.running_means[arm] += rwd
             self.running_counts[arm] += 1
@@ -88,7 +98,7 @@ class UCB(bandit):
         self.action = best_action
 
     def update(self):
-        self.reward = self.reward_fn(self.action)
+        self.reward = self.reward_fn(self.action, self.t)
 
         self.running_means[self.action] = (
             self.running_means[self.action] * self.running_counts[self.action]
