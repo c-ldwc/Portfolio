@@ -19,7 +19,7 @@ class beta_reward_generator:
     def __post_init__(self):
         self.b = self.a / self.mus - self.a
 
-    def reward(self,act,t):
+    def reward(self, act, t):
         """
         Get a reward for action `act` with mean self.mus[act]
         """
@@ -41,7 +41,7 @@ class binom_reward_generator:
     mus: ndarray[float] = None
     N: int = 1
 
-    def reward(self, act,t):
+    def reward(self, act, t):
         """
         Get a reward for action `act` with mean self.mus[act]
         """
@@ -56,31 +56,35 @@ class binom_sin_reward:
     mus: ndarray[float] = None
     N: int = 1
     period: int = 7
-    amp: float = .1
+    amp: float = 0.1
 
-    def reward(self, act,t):
+    def reward(self, act, t):
         mu = self.mus[act] + 0.01 * sin(2 * pi * t / self.period)
-        if mu > 1: mu = 1
-        if mu < 0: mu = 0
+        if mu > 1:
+            mu = 1
+        if mu < 0:
+            mu = 0
         if self.N == 1:
             return binom(p=mu, n=1).rvs(self.N)[0]
         else:
             return binom(p=mu, n=1).rvs(self.N)
-        
+
+
 @dataclass
 class binom_weekend_reward:
     mus: ndarray[float] = None
     N: int = 1
-    amp: float = .1
+    amp: float = 0.1
 
-    def reward(self, act,t):
-        mu = self.mus[act] 
-        if t in (6,7):
+    def reward(self, act, t):
+        mu = self.mus[act]
+        if t in (6, 7):
             mu = mu + self.amp
-        if mu > 1: mu = 1
-        if mu < 0: mu = 0
+        if mu > 1:
+            mu = 1
+        if mu < 0:
+            mu = 0
         if self.N == 1:
             return binom(p=mu, n=1).rvs(self.N)[0]
         else:
             return binom(p=mu, n=1).rvs(self.N)
-
